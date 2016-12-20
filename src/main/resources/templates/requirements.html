@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity3">
+<head>
+    <title>Requirements</title>
+    <meta charset="utf-8"> </meta>
+    <meta name="viewport" content="width=device-width, initial-scale=1"> </meta>
+    <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"> </link>
+    <link href="http://fonts.googleapis.com/css?family=Montserrat" rel="stylesheet" type="text/css"> </link>
+    <link href="http://fonts.googleapis.com/css?family=Lato" rel="stylesheet" type="text/css"> </link>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.11.0/bootstrap-table.min.css"> </link>
+
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="//cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.11.0/bootstrap-table.min.js"></script>
+
+    <!-- Latest compiled and minified Locales -->
+    <script src="//cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.11.0/locale/bootstrap-table-zh-CN.min.js"></script>
+
+</head>
+<body>
+
+<nav class="navbar navbar-inverse">
+    <div class="container-fluid">
+        <div class="navbar-header">
+            <a class="navbar-brand" href="#">Online Release Tool</a>
+        </div>
+        <ul class="nav navbar-nav">
+            <li class="active"><a href="/home">Home</a></li>
+            <li><a href="/releases">Releases</a></li>
+            <li><a href="/requirements">Requirements</a></li>
+            <li class="dropdown">
+                <a class="dropdown-toggle" data-toggle="dropdown" href="#">User Account
+                    <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                    <li><a href="#">Create Account</a></li>
+                    <li><a href="#">Reset Password</a></li>
+                    <li>
+                        <form th:action="@{/logout}" method="post">
+                            <input type="submit" value="Sign Out"/>
+                        </form>
+                    </li>
+                </ul>
+            </li>
+        </ul>
+        <div class="nav navbar-nav">
+            <h5 th:inline="text">Signed in as [[${#httpServletRequest.remoteUser}]]!</h5>
+        </div>
+    </div>
+</nav>
+
+<div sec:authorize="hasAuthority('ADMIN')">
+    <div id="newRequirement">
+        <h1>Create New Requirement</h1>
+        <form id="newRequirementForm">
+            <div><label> Requirement Name: <input type="text" name="requirementName"/> </label></div>
+            <div><label> Description: <input type="text" name="description"/> </label></div>
+            <div><label> Effort: <input type="number" min="1" max="20" name="effort"/> </label></div>
+            <input id="releaseId" name="releaseId" type="hidden"/>
+            <!--Default buttons with dropdown menu-->
+            <br> </br>
+            <div id="release" class="btn-group">
+                <button id="releaseButton" type="button" class="btn dropdown-toggle" data-toggle="dropdown">Release</button>
+                <ul class="dropdown-menu">
+                </ul>
+            </div>
+            <br> </br>
+        </form>
+        <button class="btn btn-primary btn-lg pull-left" id="submit" type="submit">Create New Requirement</button>
+    </div>
+</div>
+
+<script>
+      $(document).ready(function(){
+       $.ajax({
+       url: 'http://localhost:8080/release/all',
+       type: 'GET',
+       dataType: 'json',
+       success: function(data) {
+           for( index in data ){
+           $('#release ul').append('<li><a href="#" release_id="'+data[index].releaseId+'" release_name="'+data[index].releaseName+'"> '+data[index].releaseName+' </a></li>');
+
+             $('a').on('click', function(){
+                console.log("On click");
+                $('#releaseId').val($(this).attr('release_id'));
+                $('#releaseButton').html($(this).attr('release_name'));
+          });
+
+        }
+       },
+       error: function(e) {
+           console.log(e.responseText);
+       }
+    });
+ });
+</script>
+
+<div>
+<table class="display table table-bordered" id="requirementTable">
+    <thead>
+    <tr>
+        <th data-field="requirementName">Requirement Name</th>
+        <th data-field="releaseName">Release Name</th>
+        <th data-field="description">Description</th>
+        <th data-field="effort">Effort</th>
+        <th data-field="value">Value</th>
+    </tr>
+    </thead>
+
+</table>
+</div>
+
+<div id="assignValue">
+    <h1>Assign Value To Requirement</h1>
+    <form id="newRequirementValueForm">
+        <div><label> Value: <input type="number" min="1" max="20" name="value"/> </label></div>
+        <br> </br>
+        <input id="requirementId" name="requirementId" type="hidden"/>
+        <input id="userId" name="userId" type="hidden" th:value="${#authentication.principal.userId}"/>
+        <!--Default buttons with dropdown menu-->
+        <div id="requirement" class="btn-group">
+            <button id="assignValuesButton" type="button" class="btn dropdown-toggle" data-toggle="dropdown">Requirement Name</button>
+            <ul class="dropdown-menu">
+            </ul>
+        </div>
+        <br> </br>
+    </form>
+    <button class="btn btn-primary btn-lg pull-left" id="submitValue" type="submit" href="#assignValue">Assign</button>
+</div>
+
+<div id="requirementDependency">
+    <br> </br>
+    <br> </br>
+    <h1>Requirement Dependency</h1>
+    <form id="requirementDependencyForm">
+        <input id="requirementId1" name="requirementId1" type="hidden"/>
+        <input id="requirementId2" name="requirementId2" type="hidden"/>
+        <label> Requirements that should be in the same release: </label>
+        <div id="requirement1" class="btn-group">
+            <button id="dependencyButton1" type="button" class="btn dropdown-toggle" data-toggle="dropdown">Requirement Name</button>
+            <ul class="dropdown-menu">
+            </ul>
+        </div>
+        <div id="requirement2" class="btn-group">
+            <button id="dependencyButton2" type="button" class="btn dropdown-toggle" data-toggle="dropdown">Requirement Name</button>
+            <ul class="dropdown-menu">
+            </ul>
+        </div>
+    </form>
+    <br> </br>
+    <br> </br>
+    <button class="btn btn-primary btn-lg pull-left" id="submitRequirementDependency" type="submit" href="#requirementDependency">Submit</button>
+</div>
+
+<div id="requirementConflict">
+    <br> </br>
+    <br> </br>
+    <h1>Requirement Conflicts</h1>
+    <form id="requirementConflictForm">
+        <input id="requirementId3" name="requirementId3" type="hidden"/>
+        <input id="requirementId4" name="requirementId4" type="hidden"/>
+        <label> Requirements that shouldn't be in the same release: </label>
+        <div id="requirement3" class="btn-group">
+            <button id="conflictButton1" type="button" class="btn dropdown-toggle" data-toggle="dropdown">Requirement Name</button>
+            <ul class="dropdown-menu">
+            </ul>
+            <ul class="dropdown-menu">
+            </ul>
+        </div>
+        <div id="requirement4" class="btn-group">
+            <button id="conflictButton2" type="button" class="btn dropdown-toggle" data-toggle="dropdown">Requirement Name</button>
+            <ul class="dropdown-menu">
+            </ul>
+            <ul class="dropdown-menu">
+            </ul>
+        </div>
+    </form>
+    <br> </br>
+    <br> </br>
+    <button class="btn btn-primary btn-lg pull-left" id="submitRequirementConflict" type="submit" href="#requirementConflict">Submit</button>
+</div>
+
+
+
+<script>
+  $(document).ready(function(){
+
+  $.ajax({
+       url: 'http://localhost:8080/requirement/all',
+       type: 'GET',
+       dataType: 'json',
+       data: 'userId=' + $("#newRequirementValueForm input[name=userId]").val(),
+       success: function(data) {
+           console.log(data);
+           $('#requirementTable').bootstrapTable({
+              data: data
+           });
+           for( index in data ){
+                $('#requirement ul').append('<li><a requirement_id="'+data[index].requirementId+'" requirement_name="'+data[index].requirementName+'"> '+data[index].requirementName+' </a></li>');
+
+                $('a').on('click', function(){
+                console.log("On click");
+                $('#requirementId').val($(this).attr('requirement_id'));
+                $('#assignValuesButton').html($(this).attr('requirement_name'));
+                }); }
+
+           for( index in data ){
+                $('#requirement1 ul').append('<li><a requirement_id1="'+data[index].requirementId+'" requirement_name1="'+data[index].requirementName+'"> '+data[index].requirementName+' </a></li>');
+
+                $('a').on('click', function(){
+                console.log("On click");
+                $('#requirementId1').val($(this).attr('requirement_id1'));
+                $('#dependencyButton1').html($(this).attr('requirement_name1'));
+                }); }
+
+          for( index in data ){
+                $('#requirement2 ul').append('<li><a requirement_id2="'+data[index].requirementId+'" requirement_name2="'+data[index].requirementName+'"> '+data[index].requirementName+' </a></li>');
+
+                $('a').on('click', function(){
+                console.log("On click");
+                $('#requirementId2').val($(this).attr('requirement_id2'));
+                $('#dependencyButton2').html($(this).attr('requirement_name2'));
+                }); }
+
+          for( index in data ){
+                $('#requirement3 ul').append('<li><a requirement_id3="'+data[index].requirementId+'" requirement_name3="'+data[index].requirementName+'"> '+data[index].requirementName+' </a></li>');
+
+                $('a').on('click', function(){
+                console.log("On click");
+                $('#requirementId3').val($(this).attr('requirement_id3'));
+                $('#conflictButton1').html($(this).attr('requirement_name3'));
+                }); }
+
+          for( index in data ){
+                $('#requirement4 ul').append('<li><a requirement_id4="'+data[index].requirementId+'" requirement_name4="'+data[index].requirementName+'"> '+data[index].requirementName+' </a></li>');
+
+                $('a').on('click', function(){
+                console.log("On click");
+                $('#requirementId4').val($(this).attr('requirement_id4'));
+                $('#conflictButton2').html($(this).attr('requirement_name4'));
+                }); }
+
+       },
+       error: function(e) {
+           console.log(e.responseText);
+       }
+    });
+ });
+
+</script>
+
+<script>
+ $(function() {
+//twitter bootstrap script
+ $("button#submit").click(function(){
+         $.ajax({
+     type: "POST",
+     contentType: 'application/json',
+ url: "http://localhost:8080/requirement",
+ data: JSON.stringify({
+            "requirementName" : $("#newRequirementForm input[name=requirementName]").val(),
+            "releaseId" : $("#newRequirementForm input[name=releaseId]").val(),
+            "description" : $("#newRequirementForm input[name=description]").val(),
+            "effort" : $("#newRequirementForm input[name=effort]").val()
+         }),
+         success: function(msg){
+                 $("#newRequirement").html(msg)
+        $("#newRequirement").modal('hide');
+         },
+ error: function(){
+ alert("failure");
+ }
+       });
+ });
+});
+</script>
+
+<script>
+ $(function() {
+//twitter bootstrap script
+ $("button#submitRequirementConflict").click(function(){
+         $.ajax({
+     type: "PUT",
+     contentType: 'application/json',
+ url: "http://localhost:8080/requirement/conflict",
+ data: JSON.stringify({
+            "requirementId1" : $("#requirementConflictForm input[name=requirementId3]").val(),
+            "requirementId2" : $("#requirementConflictForm input[name=requirementId4]").val()
+         }),
+         success: function(msg){
+                 $("#newRequirement").html(msg)
+        $("#newRequirement").modal('hide');
+         },
+ error: function(){
+ alert("failure");
+ }
+       });
+ });
+});
+</script>
+
+<script>
+ $(function() {
+//twitter bootstrap script
+ $("button#submitRequirementDependency").click(function(){
+         $.ajax({
+     type: "PUT",
+     contentType: 'application/json',
+ url: "http://localhost:8080/requirement/dependency",
+ data: JSON.stringify({
+            "requirementId1" : $("#requirementDependencyForm input[name=requirementId1]").val(),
+            "requirementId2" : $("#requirementDependencyForm input[name=requirementId2]").val()
+         }),
+         success: function(msg){
+                 $("#newRequirement").html(msg)
+        $("#newRequirement").modal('hide');
+         },
+ error: function(){
+ alert("failure");
+ }
+       });
+ });
+});
+</script>
+
+<script>
+ $(function() {
+//twitter bootstrap script
+ $("button#submitValue").click(function(){
+         $.ajax({
+     type: "POST",
+     contentType: 'application/json',
+ url: "http://localhost:8080/requirement/value",
+ data: JSON.stringify({
+            "userId" : $("#newRequirementValueForm input[name=userId]").val(),
+            "requirementId" : $("#newRequirementValueForm input[name=requirementId]").val(),
+            "value" : $("#newRequirementValueForm input[name=value]").val(),
+         }),
+         success: function(msg){
+                 $("#newRequirementValueForm").html(msg)
+        $("#newRequirementValueForm").modal('hide');
+         },
+ error: function(){
+ alert("failure");
+ }
+       });
+ });
+});
+</script>
+
+
+</body>
+</html>

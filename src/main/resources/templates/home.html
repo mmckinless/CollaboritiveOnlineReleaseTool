@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity3">
+<head>
+    <title>Home</title>
+    <meta charset="utf-8"> </meta>
+    <meta name="viewport" content="width=device-width, initial-scale=1"> </meta>
+    <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"> </link>
+    <link href="http://fonts.googleapis.com/css?family=Montserrat" rel="stylesheet" type="text/css"> </link>
+    <link href="http://fonts.googleapis.com/css?family=Lato" rel="stylesheet" type="text/css"> </link>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.11.0/bootstrap-table.min.css"> </link>
+
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="//cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.11.0/bootstrap-table.min.js"></script>
+
+    <!-- Latest compiled and minified Locales -->
+    <script src="//cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.11.0/locale/bootstrap-table-zh-CN.min.js"></script>
+
+
+    <link href="/Q1.css" rel="stylesheet" type="text/css"> </link>
+</head>
+<body>
+
+<nav class="navbar navbar-inverse">
+    <div class="container-fluid">
+        <div class="navbar-header">
+            <a class="navbar-brand" href="#">Online Release Tool</a>
+        </div>
+        <ul class="nav navbar-nav">
+            <li class="active"><a href="/home">Home</a></li>
+            <li><a href="/releases" role="button" aria-pressed="true">Releases</a></li>
+            <li><a href="/requirements" role="button" aria-pressed="true">Requirements</a></li>
+            <li class="dropdown">
+                <a class="dropdown-toggle" data-toggle="dropdown" href="#">User Account
+                    <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                    <li><a href="#">Create Account</a></li>
+                    <li><a href="#">Reset Password</a></li>
+                    <li>
+                        <form th:action="@{/logout}" method="post">
+                            <input type="submit" value="Sign Out"/>
+                        </form>
+                    </li>
+                </ul>
+            </li>
+        </ul>
+        <div class="nav navbar-nav">
+            <h5 th:inline="text">Signed in as [[${#httpServletRequest.getUserPrincipal().getName()}]]!</h5>
+        </div>
+    </div>
+</nav>
+
+<div class="jumbotron text-center">
+    <h1>Online Release Tool</h1>
+    <p>Description of online release tool</p>
+
+    <a href="/requirements" class="btn btn-primary btn-lg active" role="button" aria-pressed="true">Requirements</a>
+
+    <a href="/releases" class="btn btn-primary btn-lg active" role="button" aria-pressed="true">Releases</a>
+
+</div>
+
+
+<div sec:authorize="hasAuthority('ADMIN')">
+    <div id="newProject">
+        <h1>Create New Project</h1>
+        <form id="newProjectForm">
+            <div><label> Project Name: <input type="text" name="projectName"/> </label></div>
+        </form>
+        <button class="btn btn-primary btn-lg pull-left" id="newProjectButton" type="submit">Create New Project</button>
+    </div>
+</div>
+
+
+<script>
+ $(function() {
+//twitter bootstrap script
+ $("button#newProjectButton").click(function(){
+         $.ajax({
+     type: "POST",
+     contentType: 'application/json',
+ url: "http://localhost:8080/project",
+ data: JSON.stringify({
+            "projectName" : $("#newProjectForm input[name=projectName]").val()
+         }),
+         success: function(msg){
+                 $("#newProject").html(msg)
+        $("#newProject").modal('hide');
+         },
+ error: function(){
+ alert("failure");
+ }
+       });
+ });
+});
+</script>
+
+
+<div>
+    <table class="display table table-bordered" id="projectTable">
+        <thead>
+        <tr>
+            <th data-field="projectId">Project Id</th>
+            <th data-field="projectName">Project Name</th>
+            <th data-field="numberOfReleases">Number of Releases</th>
+        </tr>
+        </thead>
+    </table>
+</div>
+
+<script>
+  $(document).ready(function(){
+
+  $.ajax({
+       url: 'http://localhost:8080/project/all',
+       type: 'GET',
+       dataType: 'json',
+       success: function(data) {
+           console.log(data);
+           $('#projectTable').bootstrapTable({
+              data: data
+           });
+       },
+       error: function(e) {
+           console.log(e.responseText);
+       }
+    });
+ });
+</script>
+
+</body>
+</html>

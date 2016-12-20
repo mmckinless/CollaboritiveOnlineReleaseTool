@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity3">
+<head>
+    <title>Releases</title>
+    <meta charset="utf-8"> </meta>
+    <meta name="viewport" content="width=device-width, initial-scale=1"> </meta>
+    <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"> </link>
+    <link href="http://fonts.googleapis.com/css?family=Montserrat" rel="stylesheet" type="text/css"> </link>
+    <link href="http://fonts.googleapis.com/css?family=Lato" rel="stylesheet" type="text/css"> </link>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.11.0/bootstrap-table.min.css"> </link>
+
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="//cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.11.0/bootstrap-table.min.js"></script>
+
+    <!-- Latest compiled and minified Locales -->
+    <script src="//cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.11.0/locale/bootstrap-table-zh-CN.min.js"></script>
+
+
+    <!-- Include Date Range Picker -->
+    <script type="text/javascript" src="//cdn.jsdelivr.net/bootstrap.daterangepicker/2/daterangepicker.js"></script>
+    <link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/bootstrap.daterangepicker/2/daterangepicker.css" > </link>
+
+</head>
+<body>
+
+<nav class="navbar navbar-inverse">
+    <div class="container-fluid">
+        <div class="navbar-header">
+            <a class="navbar-brand" href="#">Online Release Tool</a>
+        </div>
+        <ul class="nav navbar-nav">
+            <li class="active"><a href="/home">Home</a></li>
+            <li><a href="/releases">Releases</a></li>
+            <li><a href="/requirements">Requirements</a></li>
+            <li class="dropdown">
+                <a class="dropdown-toggle" data-toggle="dropdown" href="#">User Account
+                    <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                    <li><a href="#">Create Account</a></li>
+                    <li><a href="#">Reset Password</a></li>
+                    <li>
+                        <form th:action="@{/logout}" method="post">
+                            <input type="submit" value="Sign Out"/>
+                        </form>
+                    </li>
+                </ul>
+            </li>
+        </ul>
+        <div class="nav navbar-nav">
+            <h5 th:inline="text">Signed in as [[${#httpServletRequest.remoteUser}]]!</h5>
+        </div>
+    </div>
+</nav>
+
+<div sec:authorize="hasAuthority('ADMIN')">
+    <div id="newRelease">
+        <h1>Create New Release</h1>
+        <form id="newReleaseForm">
+            <div>
+                <label> Release Name: <input type="text" name="releaseName"/> </label>
+                <input id="projectId" name="projectId" type="hidden"/>
+                <label> Release Date: <input type="text" name="releaseDate" id="releaseDate" value="14/12/2016"/> </label>
+                <!--Default buttons with dropdown menu-->
+                <br> </br>
+                <div id="project" class="btn-group">
+                    <button id="projectButton" type="button" class="btn dropdown-toggle" data-toggle="dropdown">Project</button>
+                    <ul class="dropdown-menu">
+                    </ul>
+                </div>
+                <br> </br>
+
+            </div>
+        </form>
+        <button class="btn btn-primary btn-lg pull-left" id="submit" type="submit">Create New Release</button>
+    </div>
+</div>
+
+<script>
+$(function() {
+    $('input[name="releaseDate"]').daterangepicker({
+        singleDatePicker: true,
+        showDropdowns: true,
+        startDate: $('input[name="releaseDate"]')
+    }
+    function(start, end, label) {
+        var years = moment().diff(start, 'years');
+    });
+});
+</script>
+
+
+<script>
+      $(document).ready(function(){
+       $.ajax({
+       url: 'http://localhost:8080/project/all',
+       type: 'GET',
+       dataType: 'json',
+       success: function(data) {
+           for( index in data ){
+           $('#project ul').append('<li><a href="#" project_id="'+data[index].projectId+'" project_name="'+data[index].projectName+'"> '+data[index].projectName+' </a></li>');
+
+             $('a').on('click', function(){
+                console.log("On click");
+                console.log($(this).attr('project_name'));
+                $('#projectId').val($(this).attr('project_id'));
+                $('#projectButton').html($(this).attr('project_name'));
+          });
+
+        }
+       },
+       error: function(e) {
+           console.log(e.responseText);
+       }
+    });
+
+
+ });
+</script>
+
+<div>
+    <table class="display table table-bordered" id="releaseTable" >
+        <thead>
+        <tr>
+            <th data-field="releaseName">Release Name</th>
+            <th data-field="projectName">Project Name</th>
+            <th data-field="totalEffort">Total Effort</th>
+            <th data-field="releaseDate">Release Date</th>
+        </tr>
+        </thead>
+    </table>
+</div>
+
+
+<script>
+  $(document).ready(function(){
+
+  $.ajax({
+       url: 'http://localhost:8080/release/all',
+       type: 'GET',
+       dataType: 'json',
+       success: function(data) {
+           $('#releaseTable').bootstrapTable({
+              data: data
+           });
+       },
+       error: function(e) {
+           console.log(e.responseText);
+       }
+    });
+ });
+
+</script>
+
+<script>
+ $(function() {
+//twitter bootstrap script
+ $("button#submit").click(function(){
+         $.ajax({
+     type: "POST",
+     contentType: 'application/json',
+ url: "http://localhost:8080/release",
+ data: JSON.stringify({
+            "releaseName" : $("#newReleaseForm input[name=releaseName]").val(),
+            "projectId" : $("#newReleaseForm input[name=projectId]").val(),
+            "issues" : null,
+            "releaseDate" : $("#newReleaseForm input[name=releaseDate]").val(),
+         }),
+         success: function(msg){
+                 $("#newRelease").html(msg)
+        $("#newRelease").modal('hide');
+         },
+ error: function(){
+ alert("failure");
+ }
+       });
+ });
+});
+</script>
+
+</body>
+</html>
